@@ -8,11 +8,14 @@ let package = Package(
     products: [
         .library(name: "ShinobiKit", targets: ["ShinobiKit"]),
         .library(name: "PivotKit", targets: ["PivotKit"]),
+        .library(name: "IdentityKit", targets: ["IdentityKit"]),
     ],
     targets: [
         .target(name: "ShinobiKit", swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "ShinobiKitTests", dependencies: ["ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .target(name: "PivotKit", swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "PivotKitTests", dependencies: ["PivotKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .target(name: "IdentityKit", dependencies: ["ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .testTarget(name: "IdentityKitTests", dependencies: ["IdentityKit", "ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
     ]
 )
