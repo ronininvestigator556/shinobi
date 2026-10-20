@@ -12,6 +12,10 @@ let package = Package(
         .library(name: "CaptureKit", targets: ["CaptureKit"]),
         .library(name: "MonitorKit", targets: ["MonitorKit"]),
         .library(name: "BookmarkKit", targets: ["BookmarkKit"]),
+        .library(name: "CaseKit", targets: ["CaseKit"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.0.0"),
     ],
     targets: [
         .target(name: "ShinobiKit", swiftSettings: [.swiftLanguageMode(.v6)]),
@@ -26,5 +30,7 @@ let package = Package(
         .testTarget(name: "MonitorKitTests", dependencies: ["MonitorKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .target(name: "BookmarkKit", dependencies: ["ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "BookmarkKitTests", dependencies: ["BookmarkKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .target(name: "CaseKit", dependencies: ["ShinobiKit", .product(name: "GRDB", package: "GRDB.swift")], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .testTarget(name: "CaseKitTests", dependencies: ["CaseKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
     ]
 )
