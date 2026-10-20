@@ -32,5 +32,11 @@ let package = Package(
         .testTarget(name: "BookmarkKitTests", dependencies: ["BookmarkKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .target(name: "CaseKit", dependencies: ["ShinobiKit", .product(name: "GRDB", package: "GRDB.swift")], swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "CaseKitTests", dependencies: ["CaseKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .executableTarget(
+            name: "Shinobi",
+            dependencies: ["ShinobiKit", "IdentityKit", "CaptureKit", "PivotKit", "MonitorKit", "BookmarkKit", "CaseKit"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(name: "ShinobiTests", dependencies: ["Shinobi", "BookmarkKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
     ]
 )
