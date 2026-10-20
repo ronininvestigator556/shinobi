@@ -35,7 +35,7 @@ public struct Watch: Codable, Identifiable, Sendable, Equatable {
     public var url: String
     /// The identity the check is made as, so a watched page is polled from the same address
     /// the investigator browsed it from.
-    public var identityID: UUID
+    public var containerID: UUID
     public var interval: Interval
     public var sensitivity: ChangeDetector.Sensitivity
     /// Case to record changes into. Nil watches only notify.
@@ -57,7 +57,7 @@ public struct Watch: Codable, Identifiable, Sendable, Equatable {
         id: UUID = UUID(),
         name: String,
         url: String,
-        identityID: UUID,
+        containerID: UUID,
         interval: Interval = .hourly,
         sensitivity: ChangeDetector.Sensitivity = .moderate,
         casePath: String? = nil,
@@ -66,7 +66,7 @@ public struct Watch: Codable, Identifiable, Sendable, Equatable {
         self.id = id
         self.name = name
         self.url = url
-        self.identityID = identityID
+        self.containerID = containerID
         self.interval = interval
         self.sensitivity = sensitivity
         self.casePath = casePath

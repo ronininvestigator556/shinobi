@@ -139,7 +139,7 @@ struct WatchTests {
 
     private func makeWatch(interval: Watch.Interval = .hourly) -> Watch {
         Watch(name: "Company record", url: "https://example.com/co",
-              identityID: UUID(), interval: interval)
+              containerID: UUID(), interval: interval)
     }
 
     @Test("A watch that has never run is due")
@@ -209,7 +209,7 @@ struct WatchStoreTests {
         defer { try? FileManager.default.removeItem(at: url) }
 
         let watch = Watch(name: "Filing history", url: "https://example.com/x",
-                          identityID: UUID(), interval: .daily)
+                          containerID: UUID(), interval: .daily)
         try store.add(watch)
 
         let reloaded = WatchStore(fileURL: url)
@@ -223,9 +223,9 @@ struct WatchStoreTests {
         let (store, url) = makeStore()
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var recent = Watch(name: "Recent", url: "https://a.test", identityID: UUID())
+        var recent = Watch(name: "Recent", url: "https://a.test", containerID: UUID())
         recent.lastCheckedAt = Date()
-        var stale = Watch(name: "Stale", url: "https://b.test", identityID: UUID())
+        var stale = Watch(name: "Stale", url: "https://b.test", containerID: UUID())
         stale.lastCheckedAt = Date().addingTimeInterval(-7200)
 
         try store.add(recent)
@@ -241,7 +241,7 @@ struct WatchStoreTests {
         let (store, url) = makeStore()
         defer { try? FileManager.default.removeItem(at: url) }
 
-        var watch = Watch(name: "Before", url: "https://a.test", identityID: UUID())
+        var watch = Watch(name: "Before", url: "https://a.test", containerID: UUID())
         try store.add(watch)
         watch.name = "After"
         watch.lastDigest = "abc"
