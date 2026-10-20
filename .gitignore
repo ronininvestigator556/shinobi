@@ -1,0 +1,8 @@
+.DS_Store
+.build/
+.swiftpm/xcode/
+.swiftpm/configuration/
+*.xcuserstate
+xcuserdata/
+# superpowers execution scratch (ledger/briefs/review packages)
+.superpowers/
