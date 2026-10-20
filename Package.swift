@@ -11,6 +11,7 @@ let package = Package(
         .library(name: "IdentityKit", targets: ["IdentityKit"]),
         .library(name: "CaptureKit", targets: ["CaptureKit"]),
         .library(name: "MonitorKit", targets: ["MonitorKit"]),
+        .library(name: "BookmarkKit", targets: ["BookmarkKit"]),
     ],
     targets: [
         .target(name: "ShinobiKit", swiftSettings: [.swiftLanguageMode(.v6)]),
@@ -23,5 +24,7 @@ let package = Package(
         .testTarget(name: "CaptureKitTests", dependencies: ["CaptureKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .target(name: "MonitorKit", dependencies: ["ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "MonitorKitTests", dependencies: ["MonitorKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .target(name: "BookmarkKit", dependencies: ["ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .testTarget(name: "BookmarkKitTests", dependencies: ["BookmarkKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
     ]
 )
