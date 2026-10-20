@@ -10,6 +10,7 @@ let package = Package(
         .library(name: "PivotKit", targets: ["PivotKit"]),
         .library(name: "IdentityKit", targets: ["IdentityKit"]),
         .library(name: "CaptureKit", targets: ["CaptureKit"]),
+        .library(name: "MonitorKit", targets: ["MonitorKit"]),
     ],
     targets: [
         .target(name: "ShinobiKit", swiftSettings: [.swiftLanguageMode(.v6)]),
@@ -20,5 +21,7 @@ let package = Package(
         .testTarget(name: "IdentityKitTests", dependencies: ["IdentityKit", "ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
         .target(name: "CaptureKit", swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "CaptureKitTests", dependencies: ["CaptureKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .target(name: "MonitorKit", dependencies: ["ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .testTarget(name: "MonitorKitTests", dependencies: ["MonitorKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
     ]
 )
