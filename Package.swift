@@ -7,9 +7,12 @@ let package = Package(
     platforms: [.macOS(.v26)],
     products: [
         .library(name: "ShinobiKit", targets: ["ShinobiKit"]),
+        .library(name: "PivotKit", targets: ["PivotKit"]),
     ],
     targets: [
         .target(name: "ShinobiKit", swiftSettings: [.swiftLanguageMode(.v6)]),
         .testTarget(name: "ShinobiKitTests", dependencies: ["ShinobiKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
+        .target(name: "PivotKit", swiftSettings: [.swiftLanguageMode(.v6)]),
+        .testTarget(name: "PivotKitTests", dependencies: ["PivotKit"], swiftSettings: [.swiftLanguageMode(.v6)]),
     ]
 )
