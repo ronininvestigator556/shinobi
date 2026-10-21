@@ -19,6 +19,9 @@ public final class IdentitySessionProvider {
 
     private var dataStores: [UUID: WKWebsiteDataStore] = [:]
     private var ruleLists: [BlockingLevel: WKContentRuleList] = [:]
+    /// Trackers learned by behaviour, blocked for every identity above `.off` on top of the
+    /// level's filter-list rules.
+    private var behavioralRuleList: WKContentRuleList?
 
     /// One content controller per identity, shared by every tab in it.
     ///
@@ -54,9 +57,7 @@ public final class IdentitySessionProvider {
         if let existing = contentControllers[identity.id] { return existing }
 
         let controller = WKUserContentController()
-        if let ruleList = ruleLists[identity.blocking] {
-            controller.add(ruleList)
-        }
+        applyBlocking(to: controller, level: identity.blocking)
         if let timezone = identity.timezone {
             controller.addUserScript(Self.timezoneShim(identifier: timezone))
         }
@@ -129,20 +130,37 @@ public final class IdentitySessionProvider {
     /// time start blocking without needing a reload, as well as to sessions built later.
     public func setRuleList(_ ruleList: WKContentRuleList?, for level: BlockingLevel) {
         ruleLists[level] = ruleList
-
         for (id, identity) in containersByID where identity.blocking == level {
             guard let controller = contentControllers[id] else { continue }
-            controller.removeAllContentRuleLists()
-            if let ruleList { controller.add(ruleList) }
+            applyBlocking(to: controller, level: level)
         }
     }
 
-    /// Re-applies a identity's blocking level after its settings were edited.
+    /// Re-applies an identity's blocking level after its settings were edited.
     public func refreshBlocking(for identity: Identity) {
         containersByID[identity.id] = identity
         guard let controller = contentControllers[identity.id] else { return }
+        applyBlocking(to: controller, level: identity.blocking)
+    }
+
+    /// Installs the behaviourally-learned tracker block list, applied to every identity above
+    /// `.off` on top of its filter-list rules. Recompiled by the app when a new tracker is
+    /// promoted, so blocking tightens as the learner sees more.
+    public func setBehavioralRuleList(_ list: WKContentRuleList?) {
+        behavioralRuleList = list
+        for (id, identity) in containersByID {
+            guard let controller = contentControllers[id] else { continue }
+            applyBlocking(to: controller, level: identity.blocking)
+        }
+    }
+
+    /// Sets a controller's rule lists: the level's filter list plus the behavioural list.
+    /// `.off` gets neither.
+    private func applyBlocking(to controller: WKUserContentController, level: BlockingLevel) {
         controller.removeAllContentRuleLists()
-        if let ruleList = ruleLists[identity.blocking] { controller.add(ruleList) }
+        guard level != .off else { return }
+        if let ruleList = ruleLists[level] { controller.add(ruleList) }
+        if let behavioral = behavioralRuleList { controller.add(behavioral) }
     }
 
     // MARK: Timezone
