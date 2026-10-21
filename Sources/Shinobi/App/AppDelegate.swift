@@ -265,11 +265,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let focusAddress = viewMenu.addItem(withTitle: "Open Location", action: #selector(BrowserWindowController.focusAddressField), keyEquivalent: "l")
         focusAddress.keyEquivalentModifierMask = [.command]
         viewMenu.addItem(.separator())
+        viewMenu.addItem(withTitle: "Reload Page", action: #selector(BrowserWindowController.reloadPage), keyEquivalent: "r")
+        viewMenu.addItem(.separator())
         let toggleSidebar = viewMenu.addItem(withTitle: "Toggle Sidebar", action: #selector(BrowserWindowController.toggleSidebar), keyEquivalent: "s")
         toggleSidebar.keyEquivalentModifierMask = [.command, .control]
         let toggleInspector = viewMenu.addItem(withTitle: "Toggle Inspector", action: #selector(BrowserWindowController.toggleInspector), keyEquivalent: "i")
         toggleInspector.keyEquivalentModifierMask = [.command, .control]
-        viewMenu.addItem(withTitle: "Enter Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
+        let fullScreen = viewMenu.addItem(withTitle: "Enter Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
+        fullScreen.keyEquivalentModifierMask = [.command, .control]   // ⌃⌘F, so ⌘F stays Find
         viewMenu.addItem(.separator())
         viewMenu.addItem(withTitle: "Zoom In", action: #selector(BrowserWindowController.zoomIn), keyEquivalent: "+")
         viewMenu.addItem(withTitle: "Zoom Out", action: #selector(BrowserWindowController.zoomOut), keyEquivalent: "-")
@@ -286,6 +289,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateItem.target = self
         privacyMenuItem.submenu = privacyMenu
         mainMenu.addItem(privacyMenuItem)
+
+        // History menu: Back and Forward on the Safari key equivalents (⌘[ / ⌘]).
+        let historyMenuItem = NSMenuItem()
+        let historyMenu = NSMenu(title: "History")
+        historyMenu.addItem(withTitle: "Back", action: #selector(BrowserWindowController.goBack), keyEquivalent: "[")
+        historyMenu.addItem(withTitle: "Forward", action: #selector(BrowserWindowController.goForward), keyEquivalent: "]")
+        historyMenuItem.submenu = historyMenu
+        mainMenu.addItem(historyMenuItem)
 
         // Window menu. Tab switching lives here to match Safari, and because ⌘1–9 is
         // muscle memory an investigator brings with them.

@@ -1322,6 +1322,10 @@ final class BrowserWindowController: NSWindowController {
     @objc func zoomOut() { selectedTab?.adjustZoom(by: -0.1) }
     @objc func zoomReset() { selectedTab?.resetZoom() }
 
+    @objc func reloadPage() { selectedTab?.reload() }
+    @objc func goBack() { selectedTab?.goBack() }
+    @objc func goForward() { selectedTab?.goForward() }
+
     // MARK: Tab switching
 
     /// Selects a tab by its position, for ⌘1 through ⌘8. ⌘9 selects the last tab,
