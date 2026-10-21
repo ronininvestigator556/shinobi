@@ -41,10 +41,10 @@ final class AddressField: NSView {
         // autoresizing translation on the item view itself.
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
-        layer?.backgroundColor = Palette.wellBackground.cgColor
+        setLayerBackground(Palette.wellBackground)
         layer?.cornerRadius = Typography.cornerRadius
         layer?.borderWidth = 1
-        layer?.borderColor = Palette.separator.cgColor
+        setLayerBorder(Palette.separator)
 
         lockView.imageScaling = .scaleProportionallyDown
         lockView.translatesAutoresizingMaskIntoConstraints = false

@@ -48,10 +48,10 @@ final class SuggestionsPanel: NSObject {
 
         let identity = NSView()
         identity.wantsLayer = true
-        identity.layer?.backgroundColor = Palette.panelBackground.cgColor
+        identity.setLayerBackground(Palette.panelBackground)
         identity.layer?.cornerRadius = 6
         identity.layer?.borderWidth = 1
-        identity.layer?.borderColor = Palette.separator.cgColor
+        identity.setLayerBorder(Palette.separator)
         identity.layer?.masksToBounds = true
 
         tableView.headerView = nil

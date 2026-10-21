@@ -74,7 +74,7 @@ final class BrowserWindowController: NSWindowController {
         )
         window.title = "Shinobi"
         window.minSize = NSSize(width: 900, height: 560)
-        window.appearance = NSAppearance(named: .darkAqua)
+        // Appearance follows the system (light or dark); the palette resolves per appearance.
         window.backgroundColor = Palette.windowBackground
         // Deliberately not `fullSizeContentView`: the toolbar and the identity-strip
         // accessory beneath it are chrome that must always be present and never be
@@ -170,7 +170,7 @@ final class BrowserWindowController: NSWindowController {
         // subview that nothing in AppKit can decide to hide.
         let root = NSView()
         root.wantsLayer = true
-        root.layer?.backgroundColor = Palette.windowBackground.cgColor
+        root.setLayerBackground(Palette.windowBackground)
 
         identityStrip.translatesAutoresizingMaskIntoConstraints = false
         splitViewController.view.translatesAutoresizingMaskIntoConstraints = false

@@ -18,11 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var blockerCompiler = ContentBlockerCompiler(listStore: filterLists)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Shinobi is dark-only. This is not a stylistic preference to be overridden by the
-        // system setting: the interface encodes meaning in colour (identity identity,
-        // capture state, integrity status), and those values are calibrated against the
-        // dark surfaces in `Palette`.
-        NSApp.appearance = NSAppearance(named: .darkAqua)
+        // Shinobi follows the system appearance (light or dark), like Safari. The meaning-
+        // bearing colours (identity, capture state, integrity status) stay constant across
+        // appearances; only the neutral surface/text tokens resolve per appearance — see
+        // `Palette`. `NSApp.appearance` is left nil so the system drives it.
 
         buildMainMenu()
 

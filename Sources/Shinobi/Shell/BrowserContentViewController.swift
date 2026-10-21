@@ -21,10 +21,10 @@ final class BrowserContentViewController: NSViewController {
     override func loadView() {
         view = NSView()
         view.wantsLayer = true
-        view.layer?.backgroundColor = Palette.windowBackground.cgColor
+        view.setLayerBackground(Palette.windowBackground)
 
         webHost.wantsLayer = true
-        webHost.layer?.backgroundColor = Palette.windowBackground.cgColor
+        webHost.setLayerBackground(Palette.windowBackground)
 
         findBar.isHidden = true
 
