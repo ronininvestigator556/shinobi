@@ -213,7 +213,13 @@ struct StarterBookmarksTests {
 
     @Test("There are no duplicate addresses")
     func noDuplicates() {
-        let urls = StarterBookmarks.all().map { BookmarkStore.normalise($0.url) }
+        // National fallback services are intentionally reused across state folders: DOCs with
+        // no .gov inmate locator all route to VINE, and states with no registry search to
+        // NSOPW. Those shared addresses are expected to repeat; everything else must be unique.
+        let sharedFallbacks: Set<String> = ["https://www.vinelink.com", "https://www.nsopw.gov"]
+        let urls = StarterBookmarks.all()
+            .filter { !sharedFallbacks.contains($0.url) }
+            .map { BookmarkStore.normalise($0.url) }
         #expect(urls.count == Set(urls).count)
     }
 
