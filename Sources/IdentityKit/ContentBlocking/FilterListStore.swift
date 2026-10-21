@@ -12,11 +12,15 @@ public actor FilterListStore {
     public enum Source: String, Sendable, CaseIterable {
         case easyList
         case easyPrivacy
+        case cookieNotices
 
         public var url: URL {
             switch self {
             case .easyList: URL(string: "https://easylist.to/easylist/easylist.txt")!
             case .easyPrivacy: URL(string: "https://easylist.to/easylist/easyprivacy.txt")!
+            // Fanboy's Cookiemonster: cosmetic (##) rules that hide consent/cookie banners,
+            // compiled to css-display-none by the converter. Auto-reject without the clicks.
+            case .cookieNotices: URL(string: "https://secure.fanboy.co.nz/fanboy-cookiemonster.txt")!
             }
         }
 
@@ -24,6 +28,7 @@ public actor FilterListStore {
             switch self {
             case .easyList: "EasyList"
             case .easyPrivacy: "EasyPrivacy"
+            case .cookieNotices: "Cookie Notices"
             }
         }
 

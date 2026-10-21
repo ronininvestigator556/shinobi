@@ -60,6 +60,7 @@ public final class IdentitySessionProvider {
         if let timezone = identity.timezone {
             controller.addUserScript(Self.timezoneShim(identifier: timezone))
         }
+        controller.addUserScript(Self.fingerprintShim(seed: identity.fingerprintSeed))
 
         contentControllers[identity.id] = controller
         containersByID[identity.id] = identity
@@ -195,6 +196,82 @@ public final class IdentitySessionProvider {
             injectionTime: .atDocumentStart,
             forMainFrameOnly: false      // subframes fingerprint too
         )
+    }
+
+    // MARK: Fingerprint
+
+    /// A shim that makes the two most-hashed fingerprint surfaces — canvas pixel readback and
+    /// the WebGL vendor/renderer strings — present a value keyed to this identity's seed.
+    ///
+    /// The readback is perturbed by a deterministic, seed-driven ±1 on a sparse set of pixels:
+    /// enough to change the hash a fingerprinter computes, far too little to be visible or to
+    /// corrupt a legitimate canvas use. The same seed always produces the same perturbation,
+    /// so the identity looks like one stable machine across visits, while two identities (and
+    /// the real host) look like three different machines. Like the timezone shim this defeats
+    /// the casual, actually-performed check, not a determined adversary with engine-level
+    /// probes. It is injection-grade, by the ceiling WKWebView imposes (see ADR-0002).
+    static func fingerprintShim(seed: UInt32) -> WKUserScript {
+        let source = """
+        (function () {
+            let state = \(seed) >>> 0;
+            const rand = () => { state = (state * 1664525 + 1013904223) >>> 0; return state / 4294967296; };
+
+            const noisify = (data) => {
+                for (let i = 0; i < data.length; i += 4) {
+                    if (rand() < 0.02) {
+                        const c = i + (state % 3);
+                        data[c] = Math.max(0, Math.min(255, data[c] + (rand() < 0.5 ? -1 : 1)));
+                    }
+                }
+                return data;
+            };
+
+            try {
+                const origGetImageData = CanvasRenderingContext2D.prototype.getImageData;
+                CanvasRenderingContext2D.prototype.getImageData = function (...args) {
+                    const image = origGetImageData.apply(this, args);
+                    noisify(image.data);
+                    return image;
+                };
+                const perturb = (canvas) => {
+                    try {
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx || !canvas.width || !canvas.height) return;
+                        const image = origGetImageData.call(ctx, 0, 0, canvas.width, canvas.height);
+                        noisify(image.data);
+                        ctx.putImageData(image, 0, 0);
+                    } catch (e) {}
+                };
+                const origToDataURL = HTMLCanvasElement.prototype.toDataURL;
+                HTMLCanvasElement.prototype.toDataURL = function (...args) {
+                    perturb(this);
+                    return origToDataURL.apply(this, args);
+                };
+                const origToBlob = HTMLCanvasElement.prototype.toBlob;
+                HTMLCanvasElement.prototype.toBlob = function (...args) {
+                    perturb(this);
+                    return origToBlob.apply(this, args);
+                };
+            } catch (e) {}
+
+            const vendors = ['Intel Inc.', 'Apple', 'Google Inc.'];
+            const renderers = ['Apple GPU', 'Intel Iris OpenGL Engine', 'ANGLE (Apple, Apple M1 Pro, OpenGL 4.1)'];
+            const spoofVendor = vendors[state % vendors.length];
+            const spoofRenderer = renderers[(state >> 8) % renderers.length];
+            const patchGL = (proto) => {
+                if (!proto) return;
+                const orig = proto.getParameter;
+                proto.getParameter = function (p) {
+                    if (p === 37445) return spoofVendor;     // UNMASKED_VENDOR_WEBGL
+                    if (p === 37446) return spoofRenderer;   // UNMASKED_RENDERER_WEBGL
+                    return orig.call(this, p);
+                };
+            };
+            try { patchGL(window.WebGLRenderingContext && WebGLRenderingContext.prototype); } catch (e) {}
+            try { patchGL(window.WebGL2RenderingContext && WebGL2RenderingContext.prototype); } catch (e) {}
+        })();
+        """
+        return WKUserScript(source: source, injectionTime: .atDocumentStart, forMainFrameOnly: false)
     }
 
     // MARK: Errors
