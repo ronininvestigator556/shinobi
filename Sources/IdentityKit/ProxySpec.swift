@@ -14,7 +14,7 @@ public struct ProxySpec: Codable, Sendable, Equatable, Hashable {
     public enum Kind: String, Codable, Sendable, CaseIterable {
         /// HTTP CONNECT. What most commercial residential-proxy vendors speak.
         case http
-        /// SOCKS5. What Tor and most VPN SOCKS endpoints speak.
+        /// SOCKS5. What most VPN and SOCKS proxy endpoints speak.
         case socks5
 
         public var displayName: String {
@@ -40,12 +40,8 @@ public struct ProxySpec: Codable, Sendable, Equatable, Hashable {
 
     public var requiresPassword: Bool { username?.isEmpty == false }
 
-    /// Short form for the identity strip: `SOCKS5 127.0.0.1:9050`.
+    /// Short form for the identity strip: `SOCKS5 198.51.100.4:1080`.
     public var displayLabel: String { "\(kind.displayName) \(host):\(port)" }
-
-    /// Tor's default SOCKS port, offered as a preset because running investigative traffic
-    /// over a local Tor daemon is a common setup.
-    public static let tor = ProxySpec(kind: .socks5, host: "127.0.0.1", port: 9050)
 }
 
 extension ProxySpec {

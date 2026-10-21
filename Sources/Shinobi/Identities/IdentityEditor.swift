@@ -125,7 +125,7 @@ struct IdentityEditorView: View {
                             }
                         }
                         TextField("Host", text: $draft.proxyHost, prompt: Text("127.0.0.1"))
-                        TextField("Port", text: $draft.proxyPort, prompt: Text("9050"))
+                        TextField("Port", text: $draft.proxyPort, prompt: Text("1080"))
                         TextField("Username (optional)", text: $draft.proxyUsername)
                         SecureField("Password", text: $draft.proxyPassword)
                         Text("The password is stored in your Keychain, not in Shinobi's configuration file.")
