@@ -17,7 +17,7 @@ import Foundation
 /// jurisdiction and by the purpose of the search. That judgement is the investigator's.
 public enum StarterBookmarks {
 
-    public static func all() -> [Bookmark] { entries.map(\.bookmark) }
+    public static func all() -> [Bookmark] { entries.map(\.bookmark) + StateResources.all() }
 
     /// Folders in the order they should appear.
     public static let folderOrder = [
@@ -25,7 +25,7 @@ public enum StarterBookmarks {
         "Usernames & Accounts", "Email & Phone", "Domains & Infrastructure",
         "Images & Faces", "Archives", "Maps & Geolocation", "Transport",
         "Breaches", "Reference",
-    ]
+    ] + StateResources.folderNames
 
     private struct Entry {
         let bookmark: Bookmark
