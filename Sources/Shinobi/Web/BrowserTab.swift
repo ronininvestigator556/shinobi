@@ -305,3 +305,20 @@ final class ContextMessageRelay: NSObject, WKScriptMessageHandler {
         }
     }
 }
+
+/// Receives a page's third-party-domain report for the behavioural tracker learner.
+final class TrackerReportRelay: NSObject, WKScriptMessageHandler {
+    static let messageName = "shinobiTrackers"
+
+    var onReport: ((String, [String]) -> Void)?
+
+    nonisolated func userContentController(
+        _ controller: WKUserContentController,
+        didReceive message: WKScriptMessage
+    ) {
+        guard let body = message.body as? [String: Any],
+              let firstParty = body["firstParty"] as? String,
+              let thirdParties = body["thirdParties"] as? [String] else { return }
+        MainActor.assumeIsolated { onReport?(firstParty, thirdParties) }
+    }
+}

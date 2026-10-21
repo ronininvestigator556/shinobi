@@ -292,6 +292,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         privacyMenu.addItem(.separator())
         let updateItem = privacyMenu.addItem(withTitle: "Update Blocking Lists…", action: #selector(updateFilterLists), keyEquivalent: "")
         updateItem.target = self
+        privacyMenu.addItem(.separator())
+        privacyMenu.addItem(withTitle: "Forget Learned Trackers", action: #selector(BrowserWindowController.forgetLearnedTrackers), keyEquivalent: "")
         privacyMenuItem.submenu = privacyMenu
         mainMenu.addItem(privacyMenuItem)
 

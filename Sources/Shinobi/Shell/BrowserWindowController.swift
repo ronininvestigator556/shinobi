@@ -34,6 +34,14 @@ final class BrowserWindowController: NSWindowController {
     private let contextInstaller = ContextScriptInstaller()
     private let contextRelay = ContextMessageRelay()
 
+    /// Behavioural tracker blocking: the learner's memory, the message relay that feeds it,
+    /// and the set of content controllers already wired for reporting (so a reused controller
+    /// is not handed the handler twice — which WebKit answers with an Objective-C exception).
+    private let behaviorLearner = BehaviorLearner()
+    private let trackerRelay = TrackerReportRelay()
+    private var trackerReportingControllers = Set<ObjectIdentifier>()
+    private var didApplyLearnedTrackers = false
+
     private let egressChecker = EgressChecker()
     private var egressStatus: EgressStatus = .unknown
     private var lastEgressFailure: String?
@@ -1395,6 +1403,7 @@ final class BrowserWindowController: NSWindowController {
         }
 
         prepareContextReporting(on: configuration.userContentController)
+        prepareTrackerReporting(on: configuration.userContentController)
 
         let tab = BrowserTab(configuration: configuration, identity: identity)
         tab.onDidFinishNavigation = { [weak self] tab in self?.cases.record(tab) }
@@ -1432,6 +1441,88 @@ final class BrowserWindowController: NSWindowController {
         }
         contextInstaller.install(on: controller, handler: contextRelay)
     }
+
+    // MARK: Behavioural tracker blocking
+
+    private func prepareTrackerReporting(on controller: WKUserContentController) {
+        trackerRelay.onReport = { [weak self] firstParty, thirdParties in
+            self?.handleTrackerReport(firstParty: firstParty, thirdParties: thirdParties)
+        }
+        if trackerReportingControllers.insert(ObjectIdentifier(controller)).inserted {
+            controller.add(trackerRelay, name: TrackerReportRelay.messageName)
+            controller.addUserScript(WKUserScript(
+                source: Self.trackerReporterScript,
+                injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        }
+        // Apply whatever was learned in earlier sessions, once.
+        if !didApplyLearnedTrackers {
+            didApplyLearnedTrackers = true
+            recompileBehavioral()
+        }
+    }
+
+    private func handleTrackerReport(firstParty: String, thirdParties: [String]) {
+        // Recompile only when a new domain crossed the threshold — not on every page.
+        if behaviorLearner.observe(firstParty: firstParty, thirdParties: thirdParties) {
+            recompileBehavioral()
+        }
+    }
+
+    private func recompileBehavioral() {
+        let trackers = behaviorLearner.trackers()
+        guard !trackers.isEmpty else {
+            sessions.setBehavioralRuleList(nil)
+            return
+        }
+        let rules: [[String: Any]] = trackers.map { domain in
+            let escaped = NSRegularExpression.escapedPattern(for: domain)
+            return [
+                "trigger": ["url-filter": "^https?://([^/]*\\.)?\(escaped)", "load-type": ["third-party"]],
+                "action": ["type": "block"],
+            ]
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: rules),
+              let json = String(data: data, encoding: .utf8) else { return }
+        WKContentRuleListStore.default().compileContentRuleList(
+            forIdentifier: "shinobi-behavioral", encodedContentRuleList: json
+        ) { [weak self] ruleList, error in
+            guard let self, let ruleList, error == nil else { return }
+            self.sessions.setBehavioralRuleList(ruleList)
+        }
+    }
+
+    @objc func forgetLearnedTrackers() {
+        behaviorLearner.reset()
+        sessions.setBehavioralRuleList(nil)
+    }
+
+    /// Reports the page's third-party domains (from its resource timings) so the learner can
+    /// spot the ones that follow the investigator from site to site.
+    static let trackerReporterScript = """
+    (function () {
+        try {
+            const registrable = (host) => {
+                const parts = host.split('.');
+                return parts.length <= 2 ? host : parts.slice(-2).join('.');
+            };
+            const first = registrable(location.hostname);
+            const seen = new Set();
+            for (const entry of performance.getEntriesByType('resource')) {
+                try {
+                    const host = new URL(entry.name).hostname;
+                    if (!host) continue;
+                    const domain = registrable(host);
+                    if (domain && domain !== first) seen.add(domain);
+                } catch (_) {}
+            }
+            if (seen.size) {
+                window.webkit.messageHandlers.\(TrackerReportRelay.messageName).postMessage({
+                    firstParty: first, thirdParties: Array.from(seen)
+                });
+            }
+        } catch (_) {}
+    })();
+    """
 
     private func presentSessionFailure(_ error: Error) {
         guard let window else { return }
