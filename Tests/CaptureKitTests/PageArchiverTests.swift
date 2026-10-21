@@ -55,6 +55,25 @@ struct PageArchiverTests {
         #expect(rendered?.contains("Hidden by display none") == false)
     }
 
+    // MARK: View-only overlays never reach the record
+
+    @Test("Shinobi's injected overlays (reader dark mode) are stripped from the archive")
+    func injectedOverlaysStripped() async throws {
+        // The user may view a page in forced dark mode, but the exhibit must be the page as
+        // served — so anything marked data-shinobi-injected is removed before serialisation.
+        let webView = try await load("""
+            <html><head>
+              <style id="shinobi-reader-dark" data-shinobi-injected>html{background:#000 !important}</style>
+            </head><body><p>Real content</p></body></html>
+            """)
+
+        let archive = try await PageArchiver.archive(webView)
+
+        #expect(archive.html.contains("Real content"))
+        #expect(!archive.html.contains("data-shinobi-injected"))
+        #expect(!archive.html.contains("shinobi-reader-dark"))
+    }
+
     // MARK: An exhibit must not execute
 
     @Test("Scripts and event handlers are removed")

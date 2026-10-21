@@ -277,6 +277,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         viewMenu.addItem(withTitle: "Zoom In", action: #selector(BrowserWindowController.zoomIn), keyEquivalent: "+")
         viewMenu.addItem(withTitle: "Zoom Out", action: #selector(BrowserWindowController.zoomOut), keyEquivalent: "-")
         viewMenu.addItem(withTitle: "Actual Size", action: #selector(BrowserWindowController.zoomReset), keyEquivalent: "0")
+        viewMenu.addItem(.separator())
+        let readerDark = viewMenu.addItem(withTitle: "Dark Mode for Pages", action: #selector(BrowserWindowController.toggleReaderDark), keyEquivalent: "d")
+        readerDark.keyEquivalentModifierMask = [.command, .control]
         viewMenuItem.submenu = viewMenu
         mainMenu.addItem(viewMenuItem)
 

@@ -28,6 +28,11 @@ final class BrowserTab: NSObject, Identifiable {
     /// tab in another persona's session. Switching identities opens a new tab instead.
     let identity: Identity
 
+    /// Whether pages in this tab are shown in forced dark mode. View-only: it is injected as
+    /// a marked `<style data-shinobi-injected>` that the capture pipeline strips from archives
+    /// and disables around screenshots, so what is saved is always the page as served.
+    private(set) var readerDark = false
+
     /// Emitted *after* any chrome-visible property has changed.
     ///
     /// Deliberately not `@Published`. Combine's `@Published` publishes from `willSet`, so a
@@ -170,12 +175,71 @@ final class BrowserTab: NSObject, Identifiable {
     }
 
     func resetZoom() { webView.pageZoom = 1.0 }
+
+    // MARK: Reader dark mode (view-only)
+
+    /// Turns forced dark rendering on or off for this tab, and applies it now.
+    func setReaderDark(_ on: Bool) {
+        readerDark = on
+        applyReaderDark()
+    }
+
+    private func applyReaderDark() {
+        webView.evaluateJavaScript(
+            readerDark ? Self.readerDarkInstallJS : Self.readerDarkRemoveJS,
+            completionHandler: nil
+        )
+    }
+
+    /// A Dark-Reader-style force-dark stylesheet, injected as a marked overlay so the capture
+    /// pipeline can strip/disable it (see PageArchiverScript / PageSnapshotter).
+    static let readerDarkInstallJS = """
+    (function () {
+        if (document.getElementById('shinobi-reader-dark')) return;
+        const style = document.createElement('style');
+        style.id = 'shinobi-reader-dark';
+        style.setAttribute('data-shinobi-injected', '');
+        style.textContent = `
+            :root { color-scheme: dark !important; }
+            html, body { background-color: #1b1b1b !important; color: #cfcfcf !important; }
+            /* Transparent (not solid) so the dark page shows through while structure, layout
+               and content stay intact. An occasional gradient band can still read light; that
+               is the deliberate trade against flattening the whole page into an unreadable void. */
+            body :not(img):not(picture):not(video):not(canvas):not(svg) {
+                background-color: transparent !important;
+                border-color: #3a3a3a !important;
+            }
+            body :not(a):not(img):not(picture):not(video):not(canvas):not(svg) {
+                color: #cfcfcf !important;
+            }
+            a, a * { color: #6cb6ff !important; }
+            input, textarea, select, button {
+                background-color: #2a2a2a !important; color: #e6e6e6 !important;
+            }
+            img, picture, video, canvas, svg, [style*="background-image"] {
+                filter: brightness(.85) !important;
+            }
+        `;
+        (document.head || document.documentElement).appendChild(style);
+    })();
+    """
+
+    static let readerDarkRemoveJS = """
+    (function () {
+        const style = document.getElementById('shinobi-reader-dark');
+        if (style) style.remove();
+    })();
+    """
 }
 
 extension BrowserTab: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         onDidFinishNavigation?(self)
+
+        // Re-apply forced dark mode after each navigation, since a load replaces the DOM and
+        // takes the injected overlay with it.
+        if readerDark { applyReaderDark() }
 
         // Supersede any in-flight lookup: a fast navigation should not have an earlier
         // page's icon land on top of the current one.

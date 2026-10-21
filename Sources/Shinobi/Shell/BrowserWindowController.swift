@@ -43,6 +43,10 @@ final class BrowserWindowController: NSWindowController {
     private var inspectorItem: NSSplitViewItem?
 
     private var tabs: [BrowserTab] = []
+
+    /// Global forced-dark-mode preference for page content (view-only), remembered across
+    /// launches. New tabs inherit it; captures are unaffected.
+    private var readerDarkEnabled = UserDefaults.standard.bool(forKey: "com.shinobi.browser.readerDark")
     private var selectedTabID: UUID?
     private var tabObservers: [UUID: Set<AnyCancellable>] = [:]
 
@@ -1407,6 +1411,7 @@ final class BrowserWindowController: NSWindowController {
             )
         }
         tabs.append(tab)
+        tab.setReaderDark(readerDarkEnabled)   // new tabs inherit the global dark-mode choice
 
         // Redraw the chrome whenever anything user-visible about the tab changes. These
         // fire after the model has been updated, so the chrome reads current values.
@@ -1478,6 +1483,12 @@ final class BrowserWindowController: NSWindowController {
     }
 
     @objc func focusAddressField() { addressField.focus() }
+
+    @objc func toggleReaderDark() {
+        readerDarkEnabled.toggle()
+        UserDefaults.standard.set(readerDarkEnabled, forKey: "com.shinobi.browser.readerDark")
+        for tab in tabs { tab.setReaderDark(readerDarkEnabled) }
+    }
 
     @objc func toggleSidebar() {
         guard let sidebarItem else { return }
