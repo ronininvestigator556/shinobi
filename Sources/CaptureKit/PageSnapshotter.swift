@@ -35,7 +35,17 @@ public enum PageSnapshotter {
         configuration.afterScreenUpdates = true
         configuration.snapshotWidth = NSNumber(value: Double(width))
 
-        let image = try await webView.takeSnapshot(configuration: configuration)
+        // Capture the page as served: disable any Shinobi view-only overlay (reader dark
+        // mode) for the snapshot, then restore it whatever happens.
+        await setInjectedStylesDisabled(true, in: webView)
+        let image: NSImage
+        do {
+            image = try await webView.takeSnapshot(configuration: configuration)
+        } catch {
+            await setInjectedStylesDisabled(false, in: webView)
+            throw error
+        }
+        await setInjectedStylesDisabled(false, in: webView)
 
         guard
             let tiff = image.tiffRepresentation,
@@ -47,8 +57,25 @@ public enum PageSnapshotter {
     }
 
     public static func pdf(of webView: WKWebView) async throws -> Data {
-        // A nil rect asks WebKit for the entire page, paginated.
-        try await webView.pdf(configuration: WKPDFConfiguration())
+        await setInjectedStylesDisabled(true, in: webView)
+        do {
+            // A nil rect asks WebKit for the entire page, paginated.
+            let data = try await webView.pdf(configuration: WKPDFConfiguration())
+            await setInjectedStylesDisabled(false, in: webView)
+            return data
+        } catch {
+            await setInjectedStylesDisabled(false, in: webView)
+            throw error
+        }
+    }
+
+    /// Temporarily disables Shinobi's view-only injected styles (reader dark mode) so a
+    /// capture records the page as served. Marked with `data-shinobi-injected`; a disabled
+    /// `<style>` stops applying but stays in the DOM, so this is fully reversible.
+    private static func setInjectedStylesDisabled(_ disabled: Bool, in webView: WKWebView) async {
+        _ = try? await webView.evaluateJavaScript(
+            "document.querySelectorAll('style[data-shinobi-injected]').forEach(s => s.disabled = \(disabled)); null;"
+        )
     }
 
     /// The full scrollable height, which is what makes the screenshot full-page rather than

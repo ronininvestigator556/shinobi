@@ -23,6 +23,22 @@ Each phase links to its detailed plan once written.
 - Phases 5–7 depend on 2–4 but are largely independent of one another and could be parallelized.
 - Phase 8 is last.
 
+## Revised sequencing (after Phase 1)
+
+Phase 1 vendored a **complete, working** prior app, so the evidentiary core of Phases 2–4 shipped already and green:
+
+- **Phase 2 (Identity + Egress):** the identity model, per-identity `WKWebsiteDataStore` + proxy, `EgressChecker` (fail-closed leak detection), and the identity UI are all vendored and covered by 65 IdentityKit tests. The only v1-specific change was **dropping the Tor preset** (ADR-0004), done on `phase-2-identity-egress`. `.onion` input stays navigable (fails closed, never search-leaked). **Phase 2 is effectively complete.**
+- **Phase 3 (Capture) & Phase 4 (format/export):** CaptureKit + CaseKit are vendored and tested; the remaining Phase 4 item is reading legacy `.nigelcase` (Shinobi already writes `.shinobicase`).
+
+The genuinely-new work left is the **v1 delta** — Phases 5–8 — plus an end-to-end smoke test of the running app:
+
+- **Phase 5 — Safari-like UX** (delta a): light+dark, familiar chrome.
+- **Phase 6 — Blocking + anti-fingerprint** (delta c).
+- **Phase 7 — Pivots + launchers** (delta b): Mitaka-style, Shodan/VirusTotal, context-search.
+- **Phase 8 — Distribution hardening** (delta d).
+
 ## Status
 
-- Phase 1 plan: **pending** — being grounded in a read of the prior repo's exact module layout and public APIs.
+- **Phase 1:** complete — PR [#1](https://github.com/ronininvestigator556/shinobi/pull/1).
+- **Phase 2:** complete on branch `phase-2-identity-egress` (Tor preset dropped; identity/egress verified present + green).
+- **Next:** pick a delta phase (recommend Phase 5 UX or Phase 6 blocking) + an e2e smoke test.

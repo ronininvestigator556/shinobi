@@ -133,6 +133,11 @@ enum PageArchiverScript {
         script.remove();
         stats.scriptsRemoved++;
     }
+    // Shinobi's own view-only overlays (e.g. reader dark mode) are marked and never saved:
+    // an exhibit is the page as served, not as the investigator chose to view it.
+    for (const injected of doc.querySelectorAll('[data-shinobi-injected]')) {
+        injected.remove();
+    }
     for (const element of doc.querySelectorAll('*')) {
         for (const attribute of Array.from(element.attributes)) {
             const name = attribute.name.toLowerCase();

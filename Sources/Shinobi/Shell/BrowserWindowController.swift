@@ -43,6 +43,10 @@ final class BrowserWindowController: NSWindowController {
     private var inspectorItem: NSSplitViewItem?
 
     private var tabs: [BrowserTab] = []
+
+    /// Global forced-dark-mode preference for page content (view-only), remembered across
+    /// launches. New tabs inherit it; captures are unaffected.
+    private var readerDarkEnabled = UserDefaults.standard.bool(forKey: "com.shinobi.browser.readerDark")
     private var selectedTabID: UUID?
     private var tabObservers: [UUID: Set<AnyCancellable>] = [:]
 
@@ -74,7 +78,7 @@ final class BrowserWindowController: NSWindowController {
         )
         window.title = "Shinobi"
         window.minSize = NSSize(width: 900, height: 560)
-        window.appearance = NSAppearance(named: .darkAqua)
+        // Appearance follows the system (light or dark); the palette resolves per appearance.
         window.backgroundColor = Palette.windowBackground
         // Deliberately not `fullSizeContentView`: the toolbar and the identity-strip
         // accessory beneath it are chrome that must always be present and never be
@@ -170,7 +174,7 @@ final class BrowserWindowController: NSWindowController {
         // subview that nothing in AppKit can decide to hide.
         let root = NSView()
         root.wantsLayer = true
-        root.layer?.backgroundColor = Palette.windowBackground.cgColor
+        root.setLayerBackground(Palette.windowBackground)
 
         identityStrip.translatesAutoresizingMaskIntoConstraints = false
         splitViewController.view.translatesAutoresizingMaskIntoConstraints = false
@@ -1322,6 +1326,10 @@ final class BrowserWindowController: NSWindowController {
     @objc func zoomOut() { selectedTab?.adjustZoom(by: -0.1) }
     @objc func zoomReset() { selectedTab?.resetZoom() }
 
+    @objc func reloadPage() { selectedTab?.reload() }
+    @objc func goBack() { selectedTab?.goBack() }
+    @objc func goForward() { selectedTab?.goForward() }
+
     // MARK: Tab switching
 
     /// Selects a tab by its position, for ⌘1 through ⌘8. ⌘9 selects the last tab,
@@ -1403,6 +1411,7 @@ final class BrowserWindowController: NSWindowController {
             )
         }
         tabs.append(tab)
+        tab.setReaderDark(readerDarkEnabled)   // new tabs inherit the global dark-mode choice
 
         // Redraw the chrome whenever anything user-visible about the tab changes. These
         // fire after the model has been updated, so the chrome reads current values.
@@ -1474,6 +1483,12 @@ final class BrowserWindowController: NSWindowController {
     }
 
     @objc func focusAddressField() { addressField.focus() }
+
+    @objc func toggleReaderDark() {
+        readerDarkEnabled.toggle()
+        UserDefaults.standard.set(readerDarkEnabled, forKey: "com.shinobi.browser.readerDark")
+        for tab in tabs { tab.setReaderDark(readerDarkEnabled) }
+    }
 
     @objc func toggleSidebar() {
         guard let sidebarItem else { return }

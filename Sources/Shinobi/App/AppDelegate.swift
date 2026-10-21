@@ -18,11 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var blockerCompiler = ContentBlockerCompiler(listStore: filterLists)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Shinobi is dark-only. This is not a stylistic preference to be overridden by the
-        // system setting: the interface encodes meaning in colour (identity identity,
-        // capture state, integrity status), and those values are calibrated against the
-        // dark surfaces in `Palette`.
-        NSApp.appearance = NSAppearance(named: .darkAqua)
+        // Shinobi follows the system appearance (light or dark), like Safari. The meaning-
+        // bearing colours (identity, capture state, integrity status) stay constant across
+        // appearances; only the neutral surface/text tokens resolve per appearance — see
+        // `Palette`. `NSApp.appearance` is left nil so the system drives it.
 
         buildMainMenu()
 
@@ -266,15 +265,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let focusAddress = viewMenu.addItem(withTitle: "Open Location", action: #selector(BrowserWindowController.focusAddressField), keyEquivalent: "l")
         focusAddress.keyEquivalentModifierMask = [.command]
         viewMenu.addItem(.separator())
+        viewMenu.addItem(withTitle: "Reload Page", action: #selector(BrowserWindowController.reloadPage), keyEquivalent: "r")
+        viewMenu.addItem(.separator())
         let toggleSidebar = viewMenu.addItem(withTitle: "Toggle Sidebar", action: #selector(BrowserWindowController.toggleSidebar), keyEquivalent: "s")
         toggleSidebar.keyEquivalentModifierMask = [.command, .control]
         let toggleInspector = viewMenu.addItem(withTitle: "Toggle Inspector", action: #selector(BrowserWindowController.toggleInspector), keyEquivalent: "i")
         toggleInspector.keyEquivalentModifierMask = [.command, .control]
-        viewMenu.addItem(withTitle: "Enter Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
+        let fullScreen = viewMenu.addItem(withTitle: "Enter Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
+        fullScreen.keyEquivalentModifierMask = [.command, .control]   // ⌃⌘F, so ⌘F stays Find
         viewMenu.addItem(.separator())
         viewMenu.addItem(withTitle: "Zoom In", action: #selector(BrowserWindowController.zoomIn), keyEquivalent: "+")
         viewMenu.addItem(withTitle: "Zoom Out", action: #selector(BrowserWindowController.zoomOut), keyEquivalent: "-")
         viewMenu.addItem(withTitle: "Actual Size", action: #selector(BrowserWindowController.zoomReset), keyEquivalent: "0")
+        viewMenu.addItem(.separator())
+        let readerDark = viewMenu.addItem(withTitle: "Dark Mode for Pages", action: #selector(BrowserWindowController.toggleReaderDark), keyEquivalent: "d")
+        readerDark.keyEquivalentModifierMask = [.command, .control]
         viewMenuItem.submenu = viewMenu
         mainMenu.addItem(viewMenuItem)
 
@@ -287,6 +292,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateItem.target = self
         privacyMenuItem.submenu = privacyMenu
         mainMenu.addItem(privacyMenuItem)
+
+        // History menu: Back and Forward on the Safari key equivalents (⌘[ / ⌘]).
+        let historyMenuItem = NSMenuItem()
+        let historyMenu = NSMenu(title: "History")
+        historyMenu.addItem(withTitle: "Back", action: #selector(BrowserWindowController.goBack), keyEquivalent: "[")
+        historyMenu.addItem(withTitle: "Forward", action: #selector(BrowserWindowController.goForward), keyEquivalent: "]")
+        historyMenuItem.submenu = historyMenu
+        mainMenu.addItem(historyMenuItem)
 
         // Window menu. Tab switching lives here to match Safari, and because ⌘1–9 is
         // muscle memory an investigator brings with them.

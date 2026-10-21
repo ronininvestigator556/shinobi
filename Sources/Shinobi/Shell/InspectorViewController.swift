@@ -29,7 +29,7 @@ final class InspectorViewController: NSViewController {
     override func loadView() {
         view = NSView()
         view.wantsLayer = true
-        view.layer?.backgroundColor = Palette.panelBackground.cgColor
+        view.setLayerBackground(Palette.panelBackground)
 
         stack.orientation = .vertical
         stack.alignment = .leading

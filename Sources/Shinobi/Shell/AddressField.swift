@@ -11,7 +11,7 @@ import ShinobiKit
 @MainActor
 final class AddressField: NSView {
 
-    static let fieldHeight: CGFloat = 22
+    static let fieldHeight: CGFloat = 28
 
     /// Supplies bookmark matches for what has been typed so far.
     var completionSource: ((String) -> [BookmarkMatcher.Match])?
@@ -41,10 +41,11 @@ final class AddressField: NSView {
         // autoresizing translation on the item view itself.
         translatesAutoresizingMaskIntoConstraints = false
         wantsLayer = true
-        layer?.backgroundColor = Palette.wellBackground.cgColor
-        layer?.cornerRadius = Typography.cornerRadius
-        layer?.borderWidth = 1
-        layer?.borderColor = Palette.separator.cgColor
+        // Safari-style capsule: a rounded, quiet fill with no hard border — the fill alone
+        // separates it from the toolbar, in both light and dark.
+        setLayerBackground(Palette.wellBackground)
+        layer?.cornerRadius = Self.fieldHeight / 2
+        layer?.borderWidth = 0
 
         lockView.imageScaling = .scaleProportionallyDown
         lockView.translatesAutoresizingMaskIntoConstraints = false
@@ -52,8 +53,11 @@ final class AddressField: NSView {
         textField.isBordered = false
         textField.drawsBackground = false
         textField.focusRingType = .none
-        textField.font = Typography.mono
+        // Safari uses the system font in the address bar, not a monospaced one. (Addresses
+        // elsewhere — the ledger, exhibits — stay mono; this is display only.)
+        textField.font = .systemFont(ofSize: 13)
         textField.textColor = Palette.textPrimary
+        textField.alignment = .center   // centred when idle, left while typing — the Safari feel
         textField.placeholderString = "Search or enter address"
         textField.lineBreakMode = .byTruncatingTail
         textField.cell?.usesSingleLineMode = true
@@ -129,6 +133,7 @@ final class AddressField: NSView {
     }
 
     func focus() {
+        textField.alignment = .natural
         window?.makeFirstResponder(textField)
         textField.currentEditor()?.selectAll(nil)
     }
@@ -151,6 +156,11 @@ extension AddressField: NSTextFieldDelegate {
     /// version drove AppKit's own field completion, which inserts the match inline — typing two
     /// characters replaced the line with a bookmark's `https://…` and made the field unusable.
     /// What has been typed is the investigator's, and is never rewritten by a guess.
+    func controlTextDidBeginEditing(_ notification: Notification) {
+        // Left-align while editing (whether reached by click or by ⌘L), like Safari.
+        textField.alignment = .natural
+    }
+
     func controlTextDidChange(_ notification: Notification) {
         hasUncommittedEdit = true
         let typed = textField.stringValue
@@ -188,6 +198,7 @@ extension AddressField: NSTextFieldDelegate {
     func controlTextDidEndEditing(_ notification: Notification) {
         hasUncommittedEdit = false
         suggestions.hide()
+        textField.alignment = .center   // back to the idle, centred state
     }
 }
 

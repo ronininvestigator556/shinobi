@@ -26,7 +26,7 @@ final class FindBarView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer?.backgroundColor = Palette.panelBackground.cgColor
+        setLayerBackground(Palette.panelBackground)
         build()
     }
 
@@ -46,7 +46,7 @@ final class FindBarView: NSView {
         field.wantsLayer = true
         field.layer?.cornerRadius = Typography.cornerRadius
         field.layer?.borderWidth = 1
-        field.layer?.borderColor = Palette.separator.cgColor
+        field.setLayerBorder(Palette.separator)
 
         resultLabel.font = Typography.caption
         resultLabel.textColor = Palette.textSecondary

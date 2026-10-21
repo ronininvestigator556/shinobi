@@ -84,6 +84,19 @@ public struct Identity: Identifiable, Codable, Sendable, Equatable {
 
     public var isPersonal: Bool { id == Self.personal.id }
 
+    /// A stable per-identity seed derived from `id`, used to key fingerprint defences so an
+    /// identity's canvas/WebGL fingerprint is consistent within itself but differs between
+    /// identities and from the real machine. Deterministic across launches — unlike
+    /// `Hashable`, which Swift salts per process — because the same bundle opened twice must
+    /// present the same identity to a site, or the "stable persona" is a lie.
+    public var fingerprintSeed: UInt32 {
+        withUnsafeBytes(of: id.uuid) { raw in
+            var seed: UInt32 = 2_166_136_261            // FNV-1a
+            for byte in raw { seed = (seed ^ UInt32(byte)) &* 16_777_619 }
+            return seed
+        }
+    }
+
     /// Decoding tolerates identities written before a field existed, so an upgrade never
     /// silently drops someone's identities.
     public init(from decoder: Decoder) throws {

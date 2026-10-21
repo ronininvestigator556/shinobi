@@ -41,7 +41,7 @@ final class TabBarView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         wantsLayer = true
-        layer?.backgroundColor = Palette.panelBackground.cgColor
+        setLayerBackground(Palette.panelBackground)
 
         scrollView.drawsBackground = false
         scrollView.hasHorizontalScroller = false
@@ -71,7 +71,7 @@ final class TabBarView: NSView {
         newTabButton.toolTip = "New Tab (⌘T)"
         newTabButton.wantsLayer = true
         // Opaque, so scrolled tabs pass behind it rather than showing through.
-        newTabButton.layer?.backgroundColor = Palette.panelBackground.cgColor
+        newTabButton.setLayerBackground(Palette.panelBackground)
 
         // Added last, and kept last: the button sits beside the scrolling region, and a tab
         // must never be able to cover the control that creates tabs.
