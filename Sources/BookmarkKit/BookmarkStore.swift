@@ -23,6 +23,28 @@ public final class BookmarkStore: @unchecked Sendable {
             bookmarks = StarterBookmarks.all()
             try? persist()
         }
+
+        if seedIfEmpty { seedStateResourcesOnce() }
+    }
+
+    /// One-time top-up so installs that predate the State Resources feature gain the 50 state
+    /// folders without a full reseed. Gated by a marker file, not by content, so a state
+    /// bookmark the investigator deletes does not reappear on the next launch. On a genuinely
+    /// fresh install the starter set already includes these, so nothing is added — only the
+    /// marker is written.
+    private func seedStateResourcesOnce() {
+        let marker = fileURL.deletingLastPathComponent().appendingPathComponent(".state-resources-seeded")
+        guard !FileManager.default.fileExists(atPath: marker.path) else { return }
+
+        let present = Set(bookmarks.map { "\($0.folder)\u{1}\(Self.normalise($0.url))" })
+        let missing = StateResources.all().filter {
+            !present.contains("\($0.folder)\u{1}\(Self.normalise($0.url))")
+        }
+        if !missing.isEmpty {
+            bookmarks.append(contentsOf: missing)
+            try? persist()
+        }
+        FileManager.default.createFile(atPath: marker.path, contents: nil)
     }
 
     public static func defaultFileURL() -> URL {

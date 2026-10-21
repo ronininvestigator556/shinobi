@@ -3,6 +3,7 @@ import Foundation
 import Testing
 
 @testable import BookmarkKit
+import ShinobiKit
 
 /// The state-resources set ships by default, so a broken entry is a dead link in front of
 /// every investigator on first launch. These pin the structure, not the specific agencies.
@@ -54,5 +55,27 @@ struct StateResourcesTests {
     func foldersInStarterOrder() {
         #expect(StarterBookmarks.folderOrder.contains("Alabama"))
         #expect(StarterBookmarks.all().contains { $0.folder == "Alabama" })
+    }
+
+    @Test("A store predating the feature is topped up once, and deletions stick")
+    func topsUpExistingStoreOnce() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("bkm-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let file = dir.appendingPathComponent("bookmarks.json")
+
+        // An old store: OSINT bookmarks only, no state folders, no marker file.
+        let old = [Bookmark(title: "DuckDuckGo", url: "https://duckduckgo.com/?q={query}", folder: "Search")]
+        try JSONEncoder.shinobi().encode(old).write(to: file)
+
+        let store = BookmarkStore(fileURL: file)
+        #expect(store.folders().contains("Alabama"))
+        #expect(!store.bookmarks(inFolder: "Wyoming").isEmpty)
+
+        // Delete a state bookmark; reopening must not resurrect it — the marker gates the top-up.
+        let removedID = store.bookmarks(inFolder: "Alabama").first!.id
+        try store.remove(id: removedID)
+        let reopened = BookmarkStore(fileURL: file)
+        #expect(reopened.bookmark(withID: removedID) == nil)
     }
 }
