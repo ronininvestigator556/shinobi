@@ -236,6 +236,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         caseMenu.addItem(withTitle: "Write Signed Manifest", action: #selector(BrowserWindowController.signCase), keyEquivalent: "")
         caseMenu.addItem(withTitle: "Request Trusted Timestamp…", action: #selector(BrowserWindowController.timestampCase), keyEquivalent: "")
         caseMenu.addItem(withTitle: "Verify Case Integrity", action: #selector(BrowserWindowController.verifyCase), keyEquivalent: "")
+        caseMenu.addItem(.separator())
+        caseMenu.addItem(withTitle: "Case Dossier…", action: #selector(BrowserWindowController.showDossier), keyEquivalent: "")
         caseMenuItem.submenu = caseMenu
         mainMenu.addItem(caseMenuItem)
 
