@@ -135,6 +135,12 @@ final class CaseController {
     ///
     /// Does nothing when no case is open — browsing outside a case is ordinary browsing, and
     /// must not quietly accumulate a record somewhere.
+    /// The case dossier — every identifier and named entity harvested from the pages recorded
+    /// so far, grouped by kind, most-seen first. Empty when no case is open.
+    func dossier() -> [DossierEntity] {
+        (try? store?.dossier()) ?? []
+    }
+
     func record(_ tab: BrowserTab) {
         guard captureMode.recordsVisits else { return }
         guard let store, let url = tab.url else { return }
@@ -181,6 +187,21 @@ final class CaseController {
             if let digest = recorded.textDigest {
                 self.digestsByURL[url.absoluteString] = digest
             }
+
+            // Harvest the page's identifiers and named entities into the case dossier — a
+            // running, deduplicated index of who and what the case is about. Best-effort: a
+            // dossier failure must never stop a visit being recorded.
+            if let text, !text.isEmpty {
+                let scanned = EntityDetector.scan(text, limit: 500).map {
+                    HarvestedEntity(kind: $0.kind.rawValue, value: $0.raw, normalised: $0.normalised)
+                }
+                let named = NamedEntities.extract(from: text, limit: 200).map {
+                    HarvestedEntity(kind: $0.kind.rawValue, value: $0.name,
+                                    normalised: $0.name.lowercased())
+                }
+                _ = try? store.recordEntities(scanned + named)
+            }
+
             self.visitCount = (try? store.visitCount()) ?? 0
             self.didChange.send()
 

@@ -1484,6 +1484,66 @@ final class BrowserWindowController: NSWindowController {
 
     @objc func focusAddressField() { addressField.focus() }
 
+    private var dossierWindow: NSWindow?
+
+    @objc func showDossier() {
+        let entries = cases.dossier()
+        guard !entries.isEmpty else {
+            let alert = NSAlert()
+            alert.messageText = "No dossier yet"
+            alert.informativeText = "Open a case and browse — Shinobi harvests the names, emails, "
+                + "domains, phone numbers and other identifiers it finds into the case dossier."
+            alert.runModal()
+            return
+        }
+
+        let body = NSMutableAttributedString()
+        let grouped = Dictionary(grouping: entries, by: \.kind)
+        for kind in grouped.keys.sorted(by: { dossierLabel($0) < dossierLabel($1) }) {
+            body.append(NSAttributedString(string: dossierLabel(kind).uppercased() + "\n", attributes: [
+                .font: Typography.sectionHeader, .foregroundColor: Palette.textSecondary,
+            ]))
+            for entity in grouped[kind]!.sorted(by: { $0.occurrences > $1.occurrences }) {
+                let pages = entity.occurrences == 1 ? "1 page" : "\(entity.occurrences) pages"
+                body.append(NSAttributedString(string: "  \(entity.value)\u{2003}·\u{2003}\(pages)\n", attributes: [
+                    .font: Typography.mono, .foregroundColor: Palette.textPrimary,
+                ]))
+            }
+            body.append(NSAttributedString(string: "\n"))
+        }
+
+        let textView = NSTextView()
+        textView.isEditable = false
+        textView.drawsBackground = false
+        textView.textContainerInset = NSSize(width: 16, height: 14)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.autoresizingMask = [.width]
+        textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+        textView.textStorage?.setAttributedString(body)
+
+        let scroll = NSScrollView()
+        scroll.hasVerticalScroller = true
+        scroll.drawsBackground = true
+        scroll.backgroundColor = Palette.windowBackground
+        scroll.documentView = textView
+
+        let window = dossierWindow ?? NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 440, height: 560),
+            styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        window.title = "Case Dossier"
+        window.contentView = scroll
+        if dossierWindow == nil { window.center() }
+        dossierWindow = window
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    private func dossierLabel(_ raw: String) -> String {
+        Entity.Kind(rawValue: raw)?.displayName
+            ?? NamedEntities.Mention.Kind(rawValue: raw)?.displayName
+            ?? raw.capitalized
+    }
+
     @objc func toggleReaderDark() {
         readerDarkEnabled.toggle()
         UserDefaults.standard.set(readerDarkEnabled, forKey: "com.shinobi.browser.readerDark")

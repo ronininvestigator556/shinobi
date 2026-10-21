@@ -112,7 +112,61 @@ public final class CaseStore: @unchecked Sendable {
                 """)
         }
 
+        migrator.registerMigration("v3-dossier") { db in
+            try db.create(table: "dossierEntity") { t in
+                t.autoIncrementedPrimaryKey("id")
+                t.column("kind", .text).notNull()
+                t.column("value", .text).notNull()
+                t.column("normalised", .text).notNull()
+                t.column("firstSeenAt", .double).notNull()
+                t.column("lastSeenAt", .double).notNull()
+                t.column("occurrences", .integer).notNull()
+            }
+            // One row per (kind, normalised): seeing the same entity again increments its
+            // count rather than duplicating it.
+            try db.create(index: "dossier_unique", on: "dossierEntity",
+                          columns: ["kind", "normalised"], unique: true)
+        }
+
         return migrator
+    }
+
+    // MARK: Dossier
+
+    /// Folds harvested entities into the case dossier, deduplicating by (kind, normalised):
+    /// a new entity is inserted, a seen one has its occurrence count and last-seen bumped.
+    /// Returns how many were new to the case.
+    @discardableResult
+    public func recordEntities(_ harvested: [HarvestedEntity], at date: Date = Date()) throws -> Int {
+        guard !harvested.isEmpty else { return 0 }
+        var newCount = 0
+        try queue.write { db in
+            for entity in harvested {
+                if var existing = try DossierEntity
+                    .filter(Column("kind") == entity.kind && Column("normalised") == entity.normalised)
+                    .fetchOne(db) {
+                    existing.occurrences += 1
+                    existing.lastSeenAt = date.timeIntervalSince1970
+                    try existing.update(db)
+                } else {
+                    var row = DossierEntity(kind: entity.kind, value: entity.value,
+                                            normalised: entity.normalised,
+                                            firstSeenAt: date, lastSeenAt: date, occurrences: 1)
+                    try row.insert(db)
+                    newCount += 1
+                }
+            }
+        }
+        return newCount
+    }
+
+    /// Every entity in the case dossier, grouped by kind with the most-seen first.
+    public func dossier() throws -> [DossierEntity] {
+        try queue.read { db in
+            try DossierEntity
+                .order(Column("kind"), Column("occurrences").desc, Column("value"))
+                .fetchAll(db)
+        }
     }
 
     // MARK: Case metadata
